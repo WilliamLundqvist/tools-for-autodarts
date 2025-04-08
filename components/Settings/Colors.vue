@@ -35,8 +35,18 @@
                     class="pointer-events-none absolute inset-0 flex items-center justify-center p-2 text-center text-xs drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]"
                   >Text color</span>
                 </div>
+                <div class="relative min-h-14 w-full">
+                  <input
+                    v-model="config.colors.siteBackground"
+                    type="color"
+                    class="size-full overflow-hidden rounded-md border-none border-transparent p-0 outline-none"
+                  >
+                  <span
+                    class="pointer-events-none absolute inset-0 flex items-center justify-center p-2 text-center text-xs drop-shadow-[0_1.2px_1.2px_rgba(0,0,0,0.8)]"
+                  >Site background</span>
+                </div>
                 <div
-                  class="col-span-2 flex h-14 w-full items-center justify-center rounded-md text-5xl font-bold"
+                  class="col-span-1 flex h-14 w-full items-center justify-center rounded-md text-5xl font-bold"
                   :style="{
                     backgroundColor: config.colors.background,
                     color: config.colors.text,
@@ -85,6 +95,7 @@
 
 <script setup lang="ts">
 import AppToggle from "../AppToggle.vue";
+
 import { AutodartsToolsConfig, type IConfig } from "@/utils/storage";
 
 const emit = defineEmits([ "toggle", "settingChange" ]);
@@ -93,6 +104,15 @@ const imageUrl = browser.runtime.getURL("/images/colors.png");
 
 onMounted(async () => {
   config.value = await AutodartsToolsConfig.getValue();
+  // Initialize siteBackground if it doesn't exist yet
+  if (config.value && !config.value.colors.siteBackground) {
+    config.value.colors.siteBackground = "#121212";
+  }
+
+  // Lägg till detta för att applicera bakgrunden vid laddning
+  if (config.value?.colors.enabled) {
+    applySiteBackground();
+  }
 });
 
 watch(config, async (_, oldValue) => {
@@ -100,7 +120,12 @@ watch(config, async (_, oldValue) => {
 
   await AutodartsToolsConfig.setValue(toRaw(config.value!));
   emit("settingChange");
-  console.log("Streaming Mode setting changed");
+  console.log("Colors settings changed");
+
+  // Lägg till detta för att applicera bakgrunden när inställningar ändras
+  if (config.value?.colors.enabled) {
+    applySiteBackground();
+  }
 }, { deep: true });
 
 async function toggleFeature() {
@@ -110,10 +135,31 @@ async function toggleFeature() {
   const wasEnabled = config.value.colors.enabled;
   config.value.colors.enabled = !wasEnabled;
 
+  console.log("Toggle feature - enabled:", !wasEnabled);
+
   // If we're enabling the feature, open settings
   if (!wasEnabled) {
     await nextTick();
     emit("toggle", "colors");
+    // Applicera bakgrunden direkt när vi aktiverar funktionen
+    applySiteBackground();
+  } else {
+    // Återställ om vi inaktiverar
+    document.body.style.removeProperty("background-color");
+    document.body.style.removeProperty("background-image");
+  }
+}
+
+function applySiteBackground() {
+  if (config.value?.colors.siteBackground) {
+    document.body.style.setProperty("background-color", config.value.colors.siteBackground, "important");
+    document.body.style.setProperty("background-image", "none", "important");
   }
 }
 </script>
+
+<style>
+body {
+  background-color: #121212;
+}
+</style>

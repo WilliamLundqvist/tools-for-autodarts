@@ -13,6 +13,13 @@ async function handleChangeColor() {
   try {
     const config = await AutodartsToolsConfig.getValue();
 
+    // Applicera site background först - oavsett om andra element finns
+    const bodyElement = document.querySelector("body") as HTMLElement;
+    if (bodyElement && config.colors.enabled && config.colors.siteBackground) {
+      bodyElement.style.setProperty("background-color", config.colors.siteBackground, "important");
+      bodyElement.style.setProperty("background-image", "none", "important");
+    }
+
     const elements: HTMLElement[] = [];
 
     const playerDisplay = await waitForElement("#ad-ext-player-display") as HTMLElement;
@@ -32,7 +39,7 @@ async function handleChangeColor() {
     const turnScore = turnScoreElement.querySelector("p");
     if (turnScore) elements.push(turnScore as HTMLElement);
 
-    // for each in elements set variable: `--chakra-colors-blue-500: red;`
+    // för varje element, applicera färger
     elements.forEach((element) => {
       element.style.setProperty("background", config.colors.background);
       element.style.color = `${config.colors.text}`;
@@ -45,4 +52,11 @@ async function handleChangeColor() {
 
 export async function onRemove() {
   if (colorChangeInterval) clearInterval(colorChangeInterval);
+
+  // Återställ bakgrundsfärger när funktionen inaktiveras/tas bort
+  const bodyElement = document.querySelector("body") as HTMLElement;
+  if (bodyElement) {
+    bodyElement.style.removeProperty("background-color");
+    bodyElement.style.removeProperty("background-image");
+  }
 }
